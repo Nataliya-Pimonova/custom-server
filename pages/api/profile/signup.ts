@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { query } from './../../../lib/db';
-import createToken from './../../../lib/createToken';
+import createToken, { createSaltHash } from './../../../lib/createToken';
 //import transporterimport { sendConfirmEmail } from '@/lib/email';
 import { sendConfirmEmail } from './../../../lib/email';
 
@@ -20,10 +20,11 @@ export default async function createUser(
             .status(400)
             .json({ message: '`username` and `password` are both required' });
         }
-        const salt = crypto.randomBytes(16).toString('hex');
-        const hash = crypto
-          .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
-          .toString('hex');
+        const { salt, hash } = createSaltHash(password);
+        // const salt = crypto.randomBytes(16).toString('hex');
+        // const hash = crypto
+        //   .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
+        //   .toString('hex');
         const id = uuidv4();
         const createdAt = Date.now();
         const { baseToken, token, tokenExpires } = createToken(120);
@@ -37,7 +38,7 @@ export default async function createUser(
         `,
           [id, createdAt, username, hash, salt, token, tokenExpires]
         );
-        sendConfirmEmail(username, baseToken);
+        sendConfirmEmail(username, baseToken, 'Confirm your email');
         // const confirmEmailUrl = `${process.env.HOST}/api/recive-token?token=${token}`;
 
         // let info = await transporter.sendMail({

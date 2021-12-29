@@ -3,6 +3,7 @@ import nextConnect from 'next-connect';
 import Local from 'passport-local';
 import { setLoginSession } from '../../../lib/auth';
 import { findUser, validatePassword } from '../../../lib/user';
+//import Error from 'next/error';
 
 const authenticate = (method, req, res) =>
   new Promise((resolve, reject) => {

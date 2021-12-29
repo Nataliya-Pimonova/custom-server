@@ -11,7 +11,6 @@ export default async function confirmEmail(
   try {
     switch (req.method) {
       case 'PATCH': {
-        // case 'GET': {
         const { token, username } = req.query;
         if (!token) {
           return res.status(400).json({ message: '`token` required' });
@@ -51,42 +50,24 @@ export default async function confirmEmail(
           }) // optional
           .commit(); // execute the queries
 
-        // const results = await query(
-        //   `
-        //     SELECT username, emailConfirmed
-        //     FROM users
-        //     WHERE token = ? AND tokenExpires >= ?
-        //   `,
-        //   [hashedToken, Date.now()]
-        // );
-        // const results = await query(
-        //   ` UPDATE users SET emailConfirmed=IF(token = ? AND tokenExpires >= ? AND emailConfirmed = 0, 1, 0)
-        //   `,
-        //   [hashedToken, Date.now()]
-        // );
-        // if (!results) {
-        //   return res.status(400).json({
-        //     message: 'Ваша ссылка неверна или время ее действия истекло!',
-        //   });
-        // }
         return res.json(results);
       }
-      case 'PATCH': {
-        const { username } = req.body;
-        if (!username) {
-          return res.status(400).json({ message: '`token` required' });
-        }
-        const results = await query(
-          `
-            UPDATE users
-            SET emailConfirmed = 1, newsletters = 1, token = 0, tokenExpires = 0
-            WHERE username = ?
-          `,
-          username
-        );
+      // case 'PATCH': {
+      //   const { username } = req.body;
+      //   if (!username) {
+      //     return res.status(400).json({ message: '`token` required' });
+      //   }
+      //   const results = await query(
+      //     `
+      //       UPDATE users
+      //       SET emailConfirmed = 1, newsletters = 1, token = 0, tokenExpires = 0
+      //       WHERE username = ?
+      //     `,
+      //     username
+      //   );
 
-        return res.json(results[0]);
-      }
+      //   return res.json(results[0]);
+      // }
       default:
         res.status(405).json({
           error: { message: 'Method not allowed.' },

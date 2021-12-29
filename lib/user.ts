@@ -4,6 +4,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { query } from './db';
 import createToken from './../lib/createToken';
 import transporter, { sendConfirmEmail } from './email';
+//import Error from './../_error';
+import Error from 'next/error';
 
 // export async function createUser(req: NextApiRequest, res: NextApiResponse) {
 //   const { username, password } = req.body;
@@ -50,13 +52,14 @@ export async function findUser({ username }) {
   try {
     const user = await query(
       `
-      SELECT id, username, salt, hash, createdAt
+      SELECT *
       FROM users
       WHERE username = ?
     `,
       username
     );
 
+    //console.log(user[0]);
     return user[0];
   } catch (e) {
     console.log(e);
