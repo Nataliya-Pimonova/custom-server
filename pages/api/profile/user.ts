@@ -1,5 +1,7 @@
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { getLoginSession } from '../../../lib/auth';
 import { findUser } from '../../../lib/user';
+import { query } from '../../../lib/db';
 
 export default async function user(req, res) {
   try {

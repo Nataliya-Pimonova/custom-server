@@ -3,6 +3,8 @@ import nextConnect from 'next-connect';
 import Local from 'passport-local';
 import { setLoginSession } from '../../../lib/auth';
 import { findUser, validatePassword } from '../../../lib/user';
+import { sendNewIpEmail } from '@/lib/email';
+import { db } from './../../../lib/db';
 //import Error from 'next/error';
 
 const authenticate = (method, req, res) =>
@@ -36,18 +38,29 @@ export const localStrategy = new Local.Strategy(function (
 
 passport.use(localStrategy);
 
+let userIP = '';
+
 export default nextConnect()
   .use(passport.initialize())
   .post(async (req, res) => {
+    userIP = req.socket.remoteAddress;
     try {
       const user = await authenticate('local', req, res);
       // session is the payload to save in the token, it may contain basic info about the user
       const session = { ...user };
-      //console.log(user);
+      console.log(user);
+      setLoginSession(res, session);
 
-      await setLoginSession(res, session);
-
-      res.status(200).send({ done: true });
+      if (userIP !== user.ip) {
+        await db.query(
+          `
+        INSERT INTO user_ids (username, ip) VALUES (?, ?)',
+        [username, userIP],
+      `,
+          [user.username, user.ip]
+        );
+        await sendNewIpEmail(session.username, session.ip);
+      } else res.status(200).send({ done: true });
     } catch (error) {
       console.error(error);
       res.status(401).send(error.message);

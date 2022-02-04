@@ -9,15 +9,22 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const compression = require('compression');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
 const port = parseInt(process.env.PORT, 10) || 3000;
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 60 * 60 * 1000,
+  message: 'Too many requests from this IP, please try again in an hour!',
+});
 
 app.prepare().then(() => {
   const server = express();
   server.enable('trust proxy');
+  server.use('/api', limiter);
 
   server.use(cors());
   server.use(helmet());

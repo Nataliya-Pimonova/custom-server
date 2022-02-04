@@ -8,7 +8,7 @@ export default async function ip(req: NextApiRequest, res: NextApiResponse) {
         const results = await query(`
         SELECT * FROM posts
         ORDER BY post_id DESC
-        LIMIT 10
+      
     `);
 
         return res.json(results);

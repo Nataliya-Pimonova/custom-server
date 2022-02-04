@@ -1,9 +1,7 @@
-import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { query } from './../../../lib/db';
+import { db } from './../../../lib/db';
 import createToken, { createSaltHash } from './../../../lib/createToken';
-//import transporterimport { sendConfirmEmail } from '@/lib/email';
 import { sendConfirmEmail } from './../../../lib/email';
 
 export default async function createUser(
@@ -21,36 +19,46 @@ export default async function createUser(
             .json({ message: '`username` and `password` are both required' });
         }
         const { salt, hash } = createSaltHash(password);
-        // const salt = crypto.randomBytes(16).toString('hex');
-        // const hash = crypto
-        //   .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
-        //   .toString('hex');
+
         const id = uuidv4();
         const createdAt = Date.now();
         const { baseToken, token, tokenExpires } = createToken(120);
 
-        console.log(token);
+        const userIP = req.socket.remoteAddress;
+        try {
+          let user = await db
+            .transaction()
+            .query(
+              `
+          INSERT INTO users (id, createdAt, username, hash, salt, token, tokenExpires)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          `,
+              [id, createdAt, username, hash, salt, token, tokenExpires]
+            )
+            .query((r) => {
+              if (r) {
+                return [
+                  'INSERT INTO user_ids (username, ip) VALUES (?, ?)',
+                  [username, userIP],
+                ];
+              } else {
+                return null;
+              }
+            })
+            .rollback((e) => {
+              return res.status(400).json({
+                message: e,
+                //'Ваша ссылка неверна или время ее действия истекло!',
+              });
+              /* do something with the error */
+            }) // optional
+            .commit(); // execute the queries
+          sendConfirmEmail(username, baseToken, 'Confirm your email');
 
-        const user = await query(
-          `
-        INSERT INTO users (id, createdAt, username, hash, salt, token, tokenExpires)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        `,
-          [id, createdAt, username, hash, salt, token, tokenExpires]
-        );
-        sendConfirmEmail(username, baseToken, 'Confirm your email');
-        // const confirmEmailUrl = `${process.env.HOST}/api/recive-token?token=${token}`;
-
-        // let info = await transporter.sendMail({
-        //   from: '"Natalya 🦸‍♀️" <hi@planburg.com>', // sender address
-        //   to: username, // list of receivers
-        //   subject: 'Confirm your email', // Subject line
-        //   html: `<b>Hi, here is your confirm link: ${confirmEmailUrl}</b>`, // html body
-        // });
-
-        // console.log('Message sent: %s', info.messageId);
-
-        return res.status(200).json(user);
+          return res.status(200).json(user);
+        } catch (er) {
+          console.log(er);
+        }
       }
       default:
         res.status(405).json({
